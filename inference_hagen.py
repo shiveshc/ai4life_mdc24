@@ -1,7 +1,7 @@
 import sys
 import os
-BASE_PATH = "/opt/app/"
-# BASE_PATH = "/Users/schaudhary/siva_projects/ai4life_mdc24/"
+# BASE_PATH = "/opt/app/"
+BASE_PATH = "/Users/schaudhary/siva_projects/ai4life_mdc24/"
 sys.path.append(os.path.join(BASE_PATH, 'DifFace'))
 
 from datetime import datetime
@@ -111,6 +111,7 @@ if __name__ == '__main__':
         sampler_fn = get_sample_fn()
         diff_pred = sampler_fn(X, X)
         diff_pred = patch_fn.unpatchify(diff_pred[:, 0])
+        diff_pred = TensorMinMaxNormalize().min_max_normalize_image(diff_pred)
         all_diff_pred = diff_pred.cpu().numpy()
         tifffile.imwrite(os.path.join(OUTPUT_PATH, f"{input_file.stem}.tif"), all_diff_pred)
  

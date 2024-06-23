@@ -154,6 +154,7 @@ if __name__ == '__main__':
             sampler_fn = get_sample_fn(ch)
             diff_pred = sampler_fn(X, X)
             diff_pred = patch_fn.unpatchify(diff_pred[:, 0])
+            diff_pred = TensorMinMaxNormalize().min_max_normalize_image(diff_pred)
             all_diff_pred.append(diff_pred.cpu().numpy())
         all_diff_pred = np.stack(all_diff_pred, axis=0)
         tifffile.imwrite(os.path.join(OUTPUT_PATH, f"{input_file.stem}.tif"), all_diff_pred)
