@@ -18,7 +18,7 @@ diffusion:
 
 model:
   target: models.unet.UNetModel
-  ckpt_path: /home/schaudhary/siva_projects/ai4life_mdc24/trained_models/difface_run_w2s_wf_channel1_mean/ema_ckpts/ema0999_model_800000.pth
+  ckpt_path: /opt/app/trained_models/difface_run_w2s_wf_channel1_mean/ema_ckpts/ema0999_model_800000.pth
   params:
     image_size: 256
     in_channels: 1

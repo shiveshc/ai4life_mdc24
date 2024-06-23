@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 docker.io/library/python:3.10-slim
+FROM --platform=linux/amd64 docker.io/library/python:3.8.15
 
 # Ensures that Python output to stdout/stderr is not buffered: prevents missing information when terminating
 ENV PYTHONUNBUFFERED 1
@@ -8,7 +8,7 @@ USER user
 
 WORKDIR /opt/app
 
-RUN python -m pip install torch torchvision --index-url https://download.pytorch.org/whl/gpu
+# RUN python -m pip install torch torchvision --index-url https://download.pytorch.org/whl/gpu
 
 COPY --chown=user:user requirements.txt /opt/app/
 # You can add any Python dependencies to requirements.txt
@@ -19,7 +19,9 @@ RUN python -m pip install \
     --requirement /opt/app/requirements.txt
 
 COPY --chown=user:user DifFace /opt/app/DifFace
+COPY --chown=user:user input /opt/app/input
 COPY --chown=user:user trained_models /opt/app/trained_models
-COPY --chown=user:user inference.py /opt/app/
+COPY --chown=user:user inference_w2s.py /opt/app/
+COPY --chown=user:user inference_hagen.py /opt/app/
 
-ENTRYPOINT ["python", "inference.py"]
+ENTRYPOINT ["python", "inference_hagen.py"]

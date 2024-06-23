@@ -4,7 +4,7 @@
 set -e
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-DOCKER_TAG="example-algorithm"
+DOCKER_TAG="baikal_hagen"
 DOCKER_NOOP_VOLUME="${DOCKER_TAG}-volume"
 
 INPUT_DIR="${SCRIPT_DIR}/input/images/image-stack-unstructured-noise"
@@ -40,7 +40,6 @@ docker volume create "$DOCKER_NOOP_VOLUME"
 docker run --rm \
     --platform=linux/amd64 \
     --network none \
-    --gpus all \
     --volume "$INPUT_DIR":/input \
     --volume "$OUTPUT_DIR":/output \
     --volume "$DOCKER_NOOP_VOLUME":/tmp \
@@ -48,10 +47,18 @@ docker run --rm \
 
 # Ensure permissions are set correctly on the output
 # This allows the host user (e.g. you) to access and handle these files
+# docker run --rm \
+#     --quiet \
+#     --env HOST_UID=`id --user` \
+#     --env HOST_GID=`id --group` \
+#     --volume "$OUTPUT_DIR":/output \
+#     alpine:latest \
+#     /bin/sh -c 'chown -R ${HOST_UID}:${HOST_GID} /output'
+  
 docker run --rm \
     --quiet \
-    --env HOST_UID=`id --user` \
-    --env HOST_GID=`id --group` \
+    --env HOST_UID=$(id -u) \
+    --env HOST_GID=$(id -g) \
     --volume "$OUTPUT_DIR":/output \
     alpine:latest \
     /bin/sh -c 'chown -R ${HOST_UID}:${HOST_GID} /output'
