@@ -150,17 +150,36 @@ if __name__ == '__main__':
     for input_file in input_files:
         img = tifffile.imread(input_file)
         img = img.astype(np.float32)
-        patch_fn = Patchify(256, 256, img.shape[1], img.shape[2])
-    
-        all_diff_pred = []
-        for ch in range(img.shape[0]):
-            X = img_transform(img[ch], patch_fn)
-            X = torch.unsqueeze(X, dim=1).to(device)
-            diff_pred = all_sampler_fn[ch](X, X)
-            diff_pred = patch_fn.unpatchify(diff_pred[:, 0])
-            diff_pred = TensorMinMaxNormalize().min_max_normalize_image(diff_pred)
-            all_diff_pred.append(diff_pred.cpu().numpy())
-        all_diff_pred = np.stack(all_diff_pred, axis=0)
-        tifffile.imwrite(os.path.join(OUTPUT_PATH, f"{input_file.stem}.tif"), all_diff_pred)
+
+        if img.ndim == 4:
+            patch_fn = Patchify(256, 256, img.shape[2], img.shape[3])
+            all_diff_pred = []
+            for n in range(img.shape[0]):
+                curr_img = img[n]
+                curr_diff_pred = []
+                for ch in range(curr_img.shape[0]):
+                    X = img_transform(img[ch], patch_fn)
+                    X = torch.unsqueeze(X, dim=1).to(device)
+                    diff_pred = all_sampler_fn[ch](X, X)
+                    diff_pred = patch_fn.unpatchify(diff_pred[:, 0])
+                    diff_pred = TensorMinMaxNormalize().min_max_normalize_image(diff_pred)
+                    curr_diff_pred.append(diff_pred.cpu().numpy())
+                curr_diff_pred = np.stack(curr_diff_pred, axis=0)
+                all_diff_pred.append(curr_diff_pred)
+            all_diff_pred = np.stack(all_diff_pred, axis=0)
+            tifffile.imwrite(os.path.join(OUTPUT_PATH, f"{input_file.stem}.tif"), all_diff_pred)
+        elif img.ndim == 3:
+            patch_fn = Patchify(256, 256, img.shape[1], img.shape[2])
+            all_diff_pred = []
+            for ch in range(img.shape[0]):
+                X = img_transform(img[ch], patch_fn)
+                X = torch.unsqueeze(X, dim=1).to(device)
+                diff_pred = all_sampler_fn[ch](X, X)
+                diff_pred = patch_fn.unpatchify(diff_pred[:, 0])
+                diff_pred = TensorMinMaxNormalize().min_max_normalize_image(diff_pred)
+                all_diff_pred.append(diff_pred.cpu().numpy())
+            all_diff_pred = np.stack(all_diff_pred, axis=0)
+            tifffile.imwrite(os.path.join(OUTPUT_PATH, f"{input_file.stem}.tif"), all_diff_pred)
+
  
  

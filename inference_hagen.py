@@ -106,14 +106,28 @@ if __name__ == '__main__':
     for input_file in input_files:
         img = tifffile.imread(input_file)
         img = img.astype(np.float32)
-        patch_fn = Patchify(256, 256, img.shape[0], img.shape[1])
-    
-        X = img_transform(img, patch_fn)
-        X = torch.unsqueeze(X, dim=1).to(device)
-        diff_pred = sampler_fn(X, X)
-        diff_pred = patch_fn.unpatchify(diff_pred[:, 0])        
-        diff_pred = TensorMinMaxNormalize().min_max_normalize_image(diff_pred)
-        all_diff_pred = diff_pred.cpu().numpy()
-        tifffile.imwrite(os.path.join(OUTPUT_PATH, f"{input_file.stem}.tif"), all_diff_pred)
+        
+        if img.ndim == 3:
+            all_diff_pred = []
+            patch_fn = Patchify(256, 256, img.shape[1], img.shape[2])
+            for n in range(img.shape[0]):
+                X = img_transform(img[n], patch_fn)
+                X = torch.unsqueeze(X, dim=1).to(device)
+                diff_pred = sampler_fn(X, X)
+                diff_pred = patch_fn.unpatchify(diff_pred[:, 0])        
+                diff_pred = TensorMinMaxNormalize().min_max_normalize_image(diff_pred)
+                all_diff_pred.append(diff_pred.cpu().numpy())
+            all_diff_pred = np.stack(all_diff_pred, axis=0)
+            tifffile.imwrite(os.path.join(OUTPUT_PATH, f"{input_file.stem}.tif"), all_diff_pred)
+        elif img.ndim == 2:
+            patch_fn = Patchify(256, 256, img.shape[0], img.shape[1])
+            X = img_transform(img, patch_fn)
+            X = torch.unsqueeze(X, dim=1).to(device)
+            diff_pred = sampler_fn(X, X)
+            diff_pred = patch_fn.unpatchify(diff_pred[:, 0])
+            diff_pred = TensorMinMaxNormalize().min_max_normalize_image(diff_pred)
+            all_diff_pred = diff_pred.cpu().numpy()
+            tifffile.imwrite(os.path.join(OUTPUT_PATH, f"{input_file.stem}.tif"), all_diff_pred)
+
  
  
