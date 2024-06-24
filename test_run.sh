@@ -4,11 +4,11 @@
 set -e
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-DOCKER_TAG="baikal_hagen"
+DOCKER_TAG="baikal_w2s"
 DOCKER_NOOP_VOLUME="${DOCKER_TAG}-volume"
 
-INPUT_DIR="${SCRIPT_DIR}/input/images/image-stack-unstructured-noise"
-OUTPUT_DIR="${SCRIPT_DIR}/input/images/image-stack-denoised"
+INPUT_DIR="${SCRIPT_DIR}/test/input"
+OUTPUT_DIR="${SCRIPT_DIR}/test/output"
 
 
 echo "=+= Cleaning up any earlier output"
