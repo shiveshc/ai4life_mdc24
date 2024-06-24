@@ -1,7 +1,7 @@
 import sys
 import os
-# BASE_PATH = "/opt/app/"
-BASE_PATH = "/Users/schaudhary/siva_projects/ai4life_mdc24/"
+BASE_PATH = "/opt/app/"
+# BASE_PATH = "/Users/schaudhary/siva_projects/ai4life_mdc24/"
 sys.path.append(os.path.join(BASE_PATH, 'DifFace'))
 
 from datetime import datetime
@@ -16,8 +16,8 @@ import torchvision as thv
 import numpy as np
 
 
-INPUT_PATH = Path(os.path.join(BASE_PATH, 'input/images/image-stack-structured-noise/'))
-OUTPUT_PATH = Path(os.path.join(BASE_PATH, 'input/images/image-stack-denoised/'))
+INPUT_PATH = Path('/input/images/image-stack-structured-noise/')
+OUTPUT_PATH = Path('/output/images/image-stack-denoised/')
 OUTPUT_PATH.mkdir(exist_ok=True, parents=True)
 
 class TensorMinMaxNormalize(object):
@@ -101,6 +101,8 @@ if __name__ == '__main__':
     input_files = sorted(INPUT_PATH.glob(f"*.tif*"))
     print(f"Found files: {len(input_files)}")
     
+    sampler_fn = get_sample_fn()
+
     for input_file in input_files:
         img = tifffile.imread(input_file)
         img = img.astype(np.float32)
@@ -108,9 +110,8 @@ if __name__ == '__main__':
     
         X = img_transform(img, patch_fn)
         X = torch.unsqueeze(X, dim=1).to(device)
-        sampler_fn = get_sample_fn()
         diff_pred = sampler_fn(X, X)
-        diff_pred = patch_fn.unpatchify(diff_pred[:, 0])
+        diff_pred = patch_fn.unpatchify(diff_pred[:, 0])        
         diff_pred = TensorMinMaxNormalize().min_max_normalize_image(diff_pred)
         all_diff_pred = diff_pred.cpu().numpy()
         tifffile.imwrite(os.path.join(OUTPUT_PATH, f"{input_file.stem}.tif"), all_diff_pred)

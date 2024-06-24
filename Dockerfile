@@ -19,9 +19,8 @@ RUN python -m pip install \
     --requirement /opt/app/requirements.txt
 
 COPY --chown=user:user DifFace /opt/app/DifFace
-COPY --chown=user:user input /opt/app/input
 COPY --chown=user:user trained_models /opt/app/trained_models
 COPY --chown=user:user inference_w2s.py /opt/app/
 COPY --chown=user:user inference_hagen.py /opt/app/
 
-ENTRYPOINT ["python", "inference_hagen.py"]
+ENTRYPOINT ["python", "inference_w2s.py"]
