@@ -158,7 +158,7 @@ if __name__ == '__main__':
                 curr_img = img[n]
                 curr_diff_pred = []
                 for ch in range(curr_img.shape[0]):
-                    X = img_transform(img[ch], patch_fn)
+                    X = img_transform(curr_img[ch], patch_fn)
                     X = torch.unsqueeze(X, dim=1).to(device)
                     diff_pred = all_sampler_fn[ch](X, X)
                     diff_pred = patch_fn.unpatchify(diff_pred[:, 0])
@@ -176,6 +176,7 @@ if __name__ == '__main__':
                 X = torch.unsqueeze(X, dim=1).to(device)
                 diff_pred = all_sampler_fn[ch](X, X)
                 diff_pred = patch_fn.unpatchify(diff_pred[:, 0])
+                # diff_pred = patch_fn.unpatchify(X[:, 0])
                 diff_pred = TensorMinMaxNormalize().min_max_normalize_image(diff_pred)
                 all_diff_pred.append(diff_pred.cpu().numpy())
             all_diff_pred = np.stack(all_diff_pred, axis=0)

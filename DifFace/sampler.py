@@ -65,6 +65,7 @@ class BaseSampler:
             dist.init_process_group(backend='nccl', init_method='env://')
 
         self.num_gpus = num_gpus
+        print(f'num gpus available: {self.num_gpus}')
         self.rank = int(os.environ['LOCAL_RANK']) if num_gpus > 1 else 0
 
     def build_model(self):
@@ -72,7 +73,10 @@ class BaseSampler:
         self.diffusion = obj(**self.configs.diffusion.params)
 
         obj = util_common.get_obj_from_str(self.configs.model.target)
-        model = obj(**self.configs.model.params)
+        if self.num_gpus > 0:
+            model = obj(**self.configs.model.params).cuda()
+        else:
+            model = obj(**self.configs.model.params)
         if not self.configs.model.ckpt_path is None:
             self.load_model(model, self.configs.model.ckpt_path)
         self.model = DDP(model, device_ids=[self.rank,]) if self.num_gpus > 1 else model
@@ -80,11 +84,11 @@ class BaseSampler:
 
     def load_model(self, model, ckpt_path=None):
         if not ckpt_path is None:
-            if self.rank == 0:
-                print(f'Loading from {ckpt_path}...')
+            print(f'Loading from {ckpt_path}...')
+            if self.num_gpus == 0:
                 ckpt = torch.load(ckpt_path, map_location=torch.device('cpu'))
             else:
-                ckpt = torch.load(ckpt_path, map_location=f"cuda:{self.rank}")
+                ckpt = torch.load(ckpt_path, map_location=torch.device(f"cuda:{self.rank}"))
             util_net.reload_model(model, ckpt)
             if self.rank == 0 and self.display:
                 print('Loaded Done')

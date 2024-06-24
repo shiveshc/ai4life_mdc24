@@ -23,4 +23,4 @@ COPY --chown=user:user trained_models /opt/app/trained_models
 COPY --chown=user:user inference_w2s.py /opt/app/
 COPY --chown=user:user inference_hagen.py /opt/app/
 
-ENTRYPOINT ["python", "inference_w2s.py"]
+ENTRYPOINT ["python", "inference_hagen.py"]

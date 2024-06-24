@@ -125,6 +125,7 @@ if __name__ == '__main__':
             X = torch.unsqueeze(X, dim=1).to(device)
             diff_pred = sampler_fn(X, X)
             diff_pred = patch_fn.unpatchify(diff_pred[:, 0])
+            # diff_pred = patch_fn.unpatchify(X[:, 0])
             diff_pred = TensorMinMaxNormalize().min_max_normalize_image(diff_pred)
             all_diff_pred = diff_pred.cpu().numpy()
             tifffile.imwrite(os.path.join(OUTPUT_PATH, f"{input_file.stem}.tif"), all_diff_pred)
