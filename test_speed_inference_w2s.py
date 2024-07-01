@@ -1,7 +1,6 @@
 import sys
 import os
-BASE_PATH = "/opt/app/"
-# BASE_PATH = "/Users/schaudhary/siva_projects/ai4life_mdc24/"
+BASE_PATH = "/home/schaudhary/siva_projects/ai4life_mdc24/"
 sys.path.append(os.path.join(BASE_PATH, 'DifFace'))
 
 from datetime import datetime
@@ -15,10 +14,6 @@ import torch
 import torchvision as thv
 import numpy as np
 
-
-INPUT_PATH = Path('/input/images/image-stack-unstructured-noise/')
-OUTPUT_PATH = Path('/output/images/image-stack-denoised/')
-OUTPUT_PATH.mkdir(exist_ok=True, parents=True)
 
 class TensorMinMaxNormalize(object):
     def __init__(self) -> None:
@@ -51,9 +46,9 @@ class Patchify(object):
 
     
     def unpatchify(self, img):
-        img = torch.reshape(img, (self.num_patch_y, self.num_patch_x, self.size, self.size))
-        img = torch.permute(img, (0, 2, 1, 3))
-        img = torch.reshape(img, (self.height, self.width))
+        img = torch.reshape(img, (-1, self.num_patch_y, self.num_patch_x, self.size, self.size))
+        img = torch.permute(img, (0, 1, 3, 2, 4))
+        img = torch.reshape(img, (-1, self.height, self.width))
         return img
     
     def __call__(self, img):
@@ -64,7 +59,6 @@ class Patchify(object):
 
 def img_transform(img, patch_fn):
     transforms = thv.transforms.Compose([
-            thv.transforms.ToTensor(),
             TensorMinMaxNormalize(),
             patch_fn,
             thv.transforms.Normalize(mean=(0.5), std=(0.5)),
@@ -140,8 +134,9 @@ if __name__ == '__main__':
     random.seed(10)
     bs = 4
 
-    input_files = sorted(INPUT_PATH.glob(f"*.tif*"))
+    input_files = ['/home/schaudhary/siva_projects/Datasets/AI4Life/w2s_noisy.tiff']
     print(f"Found files: {len(input_files)}")
+    
     
     for input_file in input_files:
         img = tifffile.imread(input_file)
@@ -150,7 +145,7 @@ if __name__ == '__main__':
         patch_fn = Patchify(256, 256, img.shape[2], img.shape[3])
 
         all_diff_pred = []
-        for ch in range(img.shape[1]):
+        for ch in range(2, img.shape[1]):
             sampler_fn = get_sample_fn(ch)
             curr_img = torch.tensor(img[:, ch])
             ch_diff_pred = []
@@ -161,14 +156,20 @@ if __name__ == '__main__':
             for i in range(num_iters):
                 tic = datetime.now()
                 X = img_transform(curr_img[i*bs:min((i+1)*bs, curr_img.shape[0])], patch_fn)
+                print(X.shape)
                 X = X.to(device)
                 X = torch.unsqueeze(X, dim=1)
                 diff_pred = sampler_fn(X, X)
                 diff_pred = patch_fn.unpatchify(diff_pred[:, 0])
-                diff_pred = TensorMinMaxNormalize().min_max_normalize_image(diff_pred)
+                print(diff_pred.shape)
                 ch_diff_pred.append(diff_pred.cpu().numpy())
                 print(datetime.now() - tic)
             ch_diff_pred = np.concatenate(ch_diff_pred, axis=0)
             all_diff_pred.append(ch_diff_pred)
         all_diff_pred = np.stack(all_diff_pred, axis=0)
-        tifffile.imwrite(os.path.join(OUTPUT_PATH, f"{input_file.stem}.tif"), all_diff_pred)
+            
+
+
+
+ 
+ 

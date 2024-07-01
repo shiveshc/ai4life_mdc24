@@ -1,0 +1,54 @@
+model:
+  target: models.unet.UNetModel
+  params:
+    image_size: 256
+    in_channels: 1
+    model_channels: 16
+    out_channels: 2
+    attention_resolutions: []
+    dropout: 0
+    channel_mult: [1, 2, 4, 8]
+    num_res_blocks: [1, 2, 2, 2]
+    conv_resample: True
+    dims: 2
+    use_fp16: False
+    num_head_channels: 64
+    use_scale_shift_norm: True
+    resblock_updown: False
+    use_new_attention_order: False
+
+diffusion:
+  target: models.script_util.create_gaussian_diffusion
+  params:
+    steps: 1000
+    learn_sigma: True
+    sigma_small: False
+    noise_schedule: linear
+    use_kl: False
+    predict_xstart: False
+    rescale_timesteps: False
+    rescale_learned_sigmas: True
+    timestep_respacing: ""
+
+train:
+  lr: 1e-4
+  batch: [8, 4]   # batchsize for training and validation
+  microbatch: 8
+  use_fp16: False
+  num_workers: 1
+  prefetch_factor: 2
+  iterations: 810000
+  weight_decay: 0
+  scheduler: step   # step or cosin
+  milestones: [10000, 810000]
+  ema_rates: [0.999]
+  save_freq: 10000
+  val_freq: 5000
+  log_freq: [1000, 2000]
+
+data:
+  train:
+    type: w2s
+    params:
+      data_name: wf_channel0
+      
