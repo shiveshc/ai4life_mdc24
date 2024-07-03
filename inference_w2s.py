@@ -51,9 +51,9 @@ class Patchify(object):
 
     
     def unpatchify(self, img):
-        img = torch.reshape(img, (self.num_patch_y, self.num_patch_x, self.size, self.size))
-        img = torch.permute(img, (0, 2, 1, 3))
-        img = torch.reshape(img, (self.height, self.width))
+        img = torch.reshape(img, (-1, self.num_patch_y, self.num_patch_x, self.size, self.size))
+        img = torch.permute(img, (0, 1, 3, 2, 4))
+        img = torch.reshape(img, (-1, self.height, self.width))
         return img
     
     def __call__(self, img):
@@ -64,7 +64,6 @@ class Patchify(object):
 
 def img_transform(img, patch_fn):
     transforms = thv.transforms.Compose([
-            thv.transforms.ToTensor(),
             TensorMinMaxNormalize(),
             patch_fn,
             thv.transforms.Normalize(mean=(0.5), std=(0.5)),
@@ -73,13 +72,13 @@ def img_transform(img, patch_fn):
 
 def get_sample_fn(ch):
     if ch == 0:
-        cfg_path = os.path.join(BASE_PATH, 'DifFace/configs/sample/smaller_iddpm_w2s_wf_channel0_mean.yaml')
+        cfg_path = os.path.join(BASE_PATH, 'DifFace/configs/sample/small_iddpm_w2s_wf_channel0_mean.yaml')
         gpu_id = 0
         timestep_respacing = '1000'
         configs = OmegaConf.load(cfg_path)
         configs.gpu_id = gpu_id
         configs.diffusion.params.timestep_respacing = timestep_respacing
-        configs.model.ckpt_path = os.path.join(BASE_PATH, 'trained_models/smaller_difface_run_w2s_wf_channel0_mean/ema_ckpts/ema0999_model_800000.pth')
+        configs.model.ckpt_path = os.path.join(BASE_PATH, 'trained_models/small_difface_run_w2s_wf_channel0_mean/ema_ckpts/ema0999_model_810000.pth')
         sampler_dist = DiffusionSampler(configs)
         sampler_fn = partial(
             sampler_dist.repaint_style_sample,
@@ -93,13 +92,13 @@ def get_sample_fn(ch):
             paint_stop=False
         )
     elif ch == 1:
-        cfg_path = os.path.join(BASE_PATH, 'DifFace/configs/sample/smaller_iddpm_w2s_wf_channel1_mean.yaml')
+        cfg_path = os.path.join(BASE_PATH, 'DifFace/configs/sample/small_iddpm_w2s_wf_channel1_mean.yaml')
         gpu_id = 0
         timestep_respacing = '1000'
         configs = OmegaConf.load(cfg_path)
         configs.gpu_id = gpu_id
         configs.diffusion.params.timestep_respacing = timestep_respacing
-        configs.model.ckpt_path = os.path.join(BASE_PATH, 'trained_models/smaller_difface_run_w2s_wf_channel1_mean/ema_ckpts/ema0999_model_800000.pth')
+        configs.model.ckpt_path = os.path.join(BASE_PATH, 'trained_models/small_difface_run_w2s_wf_channel1_mean/ema_ckpts/ema0999_model_810000.pth')
         sampler_dist = DiffusionSampler(configs)
         sampler_fn = partial(
             sampler_dist.repaint_style_sample,
@@ -113,13 +112,13 @@ def get_sample_fn(ch):
             paint_stop=False
         )
     elif ch == 2:
-        cfg_path = os.path.join(BASE_PATH, 'DifFace/configs/sample/smaller_iddpm_w2s_wf_channel2_mean.yaml')
+        cfg_path = os.path.join(BASE_PATH, 'DifFace/configs/sample/small_iddpm_w2s_wf_channel2_mean.yaml')
         gpu_id = 0
         timestep_respacing = '1000'
         configs = OmegaConf.load(cfg_path)
         configs.gpu_id = gpu_id
         configs.diffusion.params.timestep_respacing = timestep_respacing
-        configs.model.ckpt_path = os.path.join(BASE_PATH, 'trained_models/smaller_difface_run_w2s_wf_channel2_mean/ema_ckpts/ema0999_model_800000.pth')
+        configs.model.ckpt_path = os.path.join(BASE_PATH, 'trained_models/small_difface_run_w2s_wf_channel2_mean/ema_ckpts/ema0999_model_810000.pth')
         sampler_dist = DiffusionSampler(configs)
         sampler_fn = partial(
             sampler_dist.repaint_style_sample,
@@ -145,8 +144,11 @@ if __name__ == '__main__':
     
     for input_file in input_files:
         img = tifffile.imread(input_file)
-        img = img.astype(np.float32)
         print(img.shape)
+        img = img.astype(np.float32)
+        img_ndim = img.ndim
+        if img_ndim == 3:
+            img = np.expand_dims(img, 0)
         patch_fn = Patchify(256, 256, img.shape[2], img.shape[3])
 
         all_diff_pred = []
@@ -165,10 +167,13 @@ if __name__ == '__main__':
                 X = torch.unsqueeze(X, dim=1)
                 diff_pred = sampler_fn(X, X)
                 diff_pred = patch_fn.unpatchify(diff_pred[:, 0])
+                # diff_pred = patch_fn.unpatchify(X[:, 0])
                 diff_pred = TensorMinMaxNormalize().min_max_normalize_image(diff_pred)
                 ch_diff_pred.append(diff_pred.cpu().numpy())
                 print(datetime.now() - tic)
             ch_diff_pred = np.concatenate(ch_diff_pred, axis=0)
             all_diff_pred.append(ch_diff_pred)
-        all_diff_pred = np.stack(all_diff_pred, axis=0)
+        all_diff_pred = np.stack(all_diff_pred, axis=1)
+        if img_ndim == 3:
+            all_diff_pred = all_diff_pred[0]
         tifffile.imwrite(os.path.join(OUTPUT_PATH, f"{input_file.stem}.tif"), all_diff_pred)
